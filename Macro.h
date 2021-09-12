@@ -19,7 +19,6 @@ inline void SafeFree(T& obj)
 	}
 }
 
-extern HWND gHWnd;
 #define MESSAGE_BOX(ErrorName)				\
 MessageBox(gHWnd, ErrorName, nullptr, MB_OK);		
 

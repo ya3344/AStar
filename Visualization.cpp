@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "Visualization.h"
-#include "Macro.h"
+#include "Astar.h"
 
 inline RECT Visualization::RectPointPlus(const RECT rect, const POINT point)
 {
@@ -18,14 +18,18 @@ void Visualization::Initialize()
 {
 	RectInfo rectInfo;
 
+	//AStar Class 할당
+	mAStar = new AStar;
+
 	mRect = { -RECT_SIZE, -RECT_SIZE, RECT_SIZE, RECT_SIZE };
-	mTileNumX = WINDOW_WIDTH / RECT_SIZE;
-	mTileNumY = WINDOW_HEIGHT / RECT_SIZE;
+	mTile_MaxNumX = WINDOW_WIDTH / RECT_SIZE;
+	mTile_MaxNumY = WINDOW_HEIGHT / RECT_SIZE;
+	mAStar->Initialize(mTile_MaxNumX, mTile_MaxNumY);
 
 	// 타일 세팅
-	for (WORD i = 1; i <= mTileNumY; ++i)
+	for (WORD i = 1; i <= mTile_MaxNumY; ++i)
 	{
-		for (WORD j = 1; j <= mTileNumX; ++j)
+		for (WORD j = 1; j <= mTile_MaxNumX; ++j)
 		{
 			rectInfo.point.x = j * RECT_SIZE;
 			rectInfo.point.y = i * RECT_SIZE;
@@ -141,7 +145,7 @@ void Visualization::SetTilePicking(const RectInfo& rectInfo)
 	y = (WORD)rectInfo.point.y / RECT_SIZE;
 	wprintf(L"xindex:%d yindex:%d\n", x, y);
 
-	tileIndex = (y * mTileNumX) + x;
+	tileIndex = (y * mTile_MaxNumX) + x;
 	wprintf(L"tildIndex:%d\n", tileIndex);
 	if (tileIndex < mTileList.size())
 	{

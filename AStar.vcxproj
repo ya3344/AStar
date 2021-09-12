@@ -148,6 +148,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AStar.h" />
+    <ClInclude Include="constant.h" />
     <ClInclude Include="Macro.h" />
     <ClInclude Include="Visualization.h" />
     <ClInclude Include="WinMain.h" />
@@ -158,6 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AStar.cpp" />
+    <ClCompile Include="constant.cpp" />
     <ClCompile Include="Visualization.cpp" />
     <ClCompile Include="WinMain.cpp" />
     <ClCompile Include="pch.cpp">

@@ -15,8 +15,7 @@
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
 WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
-HWND gHWnd;
-RECT gWindowRect = { 0, 0, Visualization::WINDOW_WIDTH, Visualization::WINDOW_HEIGHT };
+RECT gWindowRect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
 Visualization gVisualization;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
@@ -113,7 +112,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
    gHWnd = CreateWindowEx(0, szTitle, szTitle, WS_SYSMENU | WS_CAPTION | WS_MINIMIZEBOX,
-       CW_USEDEFAULT, CW_USEDEFAULT, Visualization::WINDOW_WIDTH, Visualization::WINDOW_HEIGHT, NULL, NULL, hInstance, NULL);
+       CW_USEDEFAULT, CW_USEDEFAULT, WINDOW_WIDTH, WINDOW_HEIGHT, NULL, NULL, hInstance, NULL);
 
    if (gHWnd == NULL)
        return FALSE;
@@ -125,8 +124,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    AdjustWindowRectEx(&gWindowRect, GetWindowStyle(gHWnd), GetMenu(gHWnd) != NULL,
        GetWindowExStyle(gHWnd));
 
-   int x = (GetSystemMetrics(SM_CXSCREEN) / 2) - (Visualization::WINDOW_WIDTH / 2); //화면의 크기를 얻어서 정 중앙으로
-   int y = (GetSystemMetrics(SM_CYSCREEN) / 2) - (Visualization::WINDOW_HEIGHT / 2);
+   int x = (GetSystemMetrics(SM_CXSCREEN) / 2) - (WINDOW_WIDTH / 2); //화면의 크기를 얻어서 정 중앙으로
+   int y = (GetSystemMetrics(SM_CYSCREEN) / 2) - (WINDOW_HEIGHT / 2);
 
    MoveWindow(gHWnd, x, y,
        gWindowRect.right - gWindowRect.left, gWindowRect.bottom - gWindowRect.top, TRUE);
@@ -152,7 +151,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     HBITMAP oldBitmap;
     PAINTSTRUCT ps;
     //static POINT mousePoint;
-    static Visualization::RectInfo rectInfo;
+    static RectInfo rectInfo;
     static BYTE rButtonCount = 0;
     static bool isClip = false;
 
@@ -182,7 +181,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             rectInfo.point.y = HIWORD(lParam);
             //ScreenToClient(gHWnd, &rectInfo.point);
             wprintf(L"X: %d Y: %d\n", rectInfo.point.x, rectInfo.point.y);
-            rectInfo.index = Visualization::BLOCK_INDEX;
+            rectInfo.index = BLOCK_INDEX;
             gVisualization.SetTilePicking(rectInfo);
             InvalidateRect(hWnd, NULL, false);
         }
@@ -203,9 +202,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             //ScreenToClient(gHWnd, &rectInfo.point);
             wprintf(L"X: %d Y: %d\n", rectInfo.point.x, rectInfo.point.y);
             if(rButtonCount == 0)
-                rectInfo.index = Visualization::START_INDEX;
+                rectInfo.index = START_INDEX;
             else if(rButtonCount == 1)
-                rectInfo.index = Visualization::FINISH_INDEX;
+                rectInfo.index = FINISH_INDEX;
             gVisualization.SetTilePicking(rectInfo);
             InvalidateRect(hWnd, NULL, false);
             ++rButtonCount;
@@ -219,7 +218,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 rectInfo.point.y = HIWORD(lParam);
                 //ScreenToClient(gHWnd, &rectInfo.point);
                 wprintf(L"X: %d Y: %d\n", rectInfo.point.x, rectInfo.point.y);
-                rectInfo.index = Visualization::BLOCK_INDEX;
+                rectInfo.index = BLOCK_INDEX;
                 gVisualization.SetTilePicking(rectInfo);
                 InvalidateRect(hWnd, NULL, false);
             }
@@ -231,7 +230,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             hdc = BeginPaint(hWnd, &ps);
             //	DoubleBuffering
             memDC = CreateCompatibleDC(hdc);
-            selectBitmap = CreateCompatibleBitmap(hdc, Visualization::WINDOW_WIDTH, Visualization::WINDOW_HEIGHT);
+            selectBitmap = CreateCompatibleBitmap(hdc, WINDOW_WIDTH, WINDOW_HEIGHT);
             oldBitmap = (HBITMAP)SelectObject(memDC, selectBitmap);
             //	Begin work
             SetBkMode(memDC, TRANSPARENT);
@@ -240,7 +239,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             gVisualization.CreateTile(memDC);
             
 
-            BitBlt(hdc, 0, 0, Visualization::WINDOW_WIDTH, Visualization::WINDOW_HEIGHT, memDC, 0, 0, SRCCOPY);
+            BitBlt(hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, memDC, 0, 0, SRCCOPY);
 
             SelectObject(memDC, oldBitmap);
             DeleteObject(selectBitmap);
