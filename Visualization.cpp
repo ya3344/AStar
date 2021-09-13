@@ -2,6 +2,11 @@
 #include "Visualization.h"
 #include "Astar.h"
 
+Visualization::~Visualization()
+{
+	SafeDelete(mAStar);
+}
+
 inline RECT Visualization::RectPointPlus(const RECT rect, const POINT point)
 {
 	RECT rectResult =
@@ -158,6 +163,12 @@ void Visualization::SetTilePicking(const RectInfo& rectInfo)
 		else if (rectInfo.index == FINISH_INDEX)
 		{
 			mPrevFinish_TileIndex = tileIndex;
+			// 길찾기 시작
+			if (false == mAStar->AStarStart(mPrevStart_TileIndex, tileIndex, mTileList))
+			{
+				MESSAGE_BOX(L"해당 위치로는 목적지를 설정 할 수 없습니다.!");
+				return;
+			}
 		}
 		mTileList[tileIndex].index = rectInfo.index;
 	}

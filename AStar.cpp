@@ -1,12 +1,6 @@
 #include "pch.h"
 #include "AStar.h"
 
-AStar::AStar()
-{
-	mOpenList.clear();
-	mCloseList.clear();
-}
-
 AStar::~AStar()
 {
 	Release();
@@ -21,35 +15,33 @@ bool AStar::Initialize(const WORD tile_MaxNumX, const WORD tile_MaxNumY)
 }
 
 
-bool AStar::AStarStart(WORD startIndex, WORD finishIndex)
+bool AStar::AStarStart(WORD startIndex, WORD finishIndex, const std::vector<RectInfo>& tileList)
 {
-	/*if (startIndex == goalIndex)
+	if (startIndex == finishIndex)
 	{
 		return false;
 	}
 
-	const vector<Image*>& tileSpace = TileMgr::GetInstance()->GetTileSpace();
-
-	if (goalIndex < 0 || goalIndex >= tileSpace.size())
+	if (finishIndex < 0 || finishIndex >= tileList.size())
 		return false;
 
-	if (tileSpace[goalIndex]->GetDrawID() == TILE_BLOCK)
+	if (BLOCK_INDEX == tileList[finishIndex].index || BLOCK_INDEX == tileList[startIndex].index)
 		return false;
 
 	mStartIndex = startIndex;
-	mGoalIndex = goalIndex;
+	mFinishIndex = finishIndex;
 
 	Release();
 	
-	FindRoute(tileSpace);
+	FindRoute(tileList);
 
 	if (mBestRoadSpace.empty())
-		return false;*/
+		return false;
 
 	return true;
 }
 
-void AStar::FindRoute(const vector<Image*>& tileSpace)
+void AStar::FindRoute(const std::vector<RectInfo>& tileList)
 {
 	// 여덟 방향을 조사한다.
 	//ASTAR_NODE* pParent = new ASTAR_NODE(0.f, (int)mStartIndex, nullptr, L"Me");
@@ -178,25 +170,35 @@ void AStar::FindRoute(const vector<Image*>& tileSpace)
 	//}
 }
 
-ASTAR_NODE * AStar::CreateNode(ASTAR_NODE* pParent, int index, const vector<Image*>& tileSpace)
+AStar::AStarNodeInfo* AStar::CreateNode(const AStarNodeInfo* pParent, const WORD index, const bool isDiagonal, const vector<RectInfo>& tileList)
 {
-	//float G = MathMgr::CaclDistance(tileSpace[pParent->index], tileSpace[index]);
-	//float H = MathMgr::CaclDistance(tileSpace[index], tileSpace[mGoalIndex]);
+	WORD dx = (WORD)(abs(tileList[mFinishIndex].point.x - tileList[index].point.x)) / RECT_SIZE;
+	WORD dy = (WORD)(abs(tileList[mFinishIndex].point.y - tileList[index].point.y)) / RECT_SIZE;
+	WORD H = dx + dy;
+	float G;
+	if (true == isDiagonal)
+	{
+		G = pParent->G + 1.5f;
+	}
+	else
+	{
+		G = pParent->G + 1.f;
+	}
 
-	//ASTAR_NODE* pNode = new ASTAR_NODE(G+H, index, pParent);
+	AStarNodeInfo* node = new AStarNodeInfo(G, H, index, pParent);
 
-	return nullptr;
+	return node;
 }
 
 bool AStar::CheckList(size_t index)
 {
-	for (ASTAR_NODE* pNode : mOpenList)
+	for (const AStarNodeInfo* pNode : mOpenList)
 	{
 		if (pNode->index == index)
 			return false;
 	}
 
-	for (ASTAR_NODE* pNode : mCloseList)
+	for (const AStarNodeInfo* pNode : mCloseList)
 	{
 		if (pNode->index == index)
 			return false;
@@ -205,22 +207,23 @@ bool AStar::CheckList(size_t index)
 	return true;
 }
 
-bool AStar::Compare(ASTAR_NODE * pSrcNode, ASTAR_NODE * pDestNode)
+bool AStar::Compare(AStarNodeInfo* pSrcNode, AStarNodeInfo* pDestNode)
 {
-	return pSrcNode->cost < pDestNode->cost;
+	//return pSrcNode->cost < pDestNode->cost;
+	return false;
 }
 
 
 void AStar::Release(void)
 {
-	/*for_each(mOpenList.begin(), mOpenList.end(), SafeDelete<ASTAR_NODE*>);
+	for_each(mOpenList.begin(), mOpenList.end(), SafeDelete<AStarNodeInfo*>);
 	mOpenList.clear();
 
-	for_each(mCloseList.begin(), mCloseList.end(), SafeDelete<ASTAR_NODE*>);
+	for_each(mCloseList.begin(), mCloseList.end(), SafeDelete<AStarNodeInfo*>);
 	mCloseList.clear();
 	
 	while (mBestRoadSpace.empty() == false)
 	{
 		mBestRoadSpace.pop();
-	}*/
+	}
 }

@@ -7,6 +7,7 @@ enum eTileIndex
 	BLOCK_INDEX,
 	START_INDEX,
 	FINISH_INDEX,
+	RECT_SIZE = 40,
 };
 
 enum eWindowINdex

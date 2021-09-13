@@ -1,47 +1,48 @@
 #pragma once
 
-class Image;
-
-typedef struct tagAStarNode
-{
-	explicit tagAStarNode(float cost, int index, tagAStarNode* pParent)
-	{
-		this->cost = cost;
-		this->index = index;
-		this->pParent = pParent;
-	}
-
-	float cost = 0.f;
-	int index = 0;
-	tagAStarNode* pParent = nullptr;
-
-}ASTAR_NODE;
 
 class AStar
 {
 public:
-	AStar();
+	AStar() = default;
 	~AStar();
+
+private:
+	struct AStarNodeInfo
+	{
+		explicit AStarNodeInfo(const float G, const float H, const WORD index, const AStarNodeInfo* parent)
+		{
+			this->G = G;
+			this->H = H;
+			this->index = index;
+			this->parent = parent;
+		}
+
+		float H = 0.f;
+		float G = 0.f;
+		WORD index = 0;
+		const AStarNodeInfo* parent = nullptr;
+	};
 
 public:
 	bool Initialize(const WORD tile_MaxNumX, const WORD tile_MaxNumY);
-	std::stack<ASTAR_NODE*>& GetBesRoadSpace(void) { return mBestRoadSpace; }
+	std::stack<AStarNodeInfo*>& GetBesRoadSpace(void) { return mBestRoadSpace; }
 	void Release(void);
 
 public:
-	bool AStarStart(WORD startIndex, WORD finishIndex);
+	bool AStarStart(WORD startIndex, WORD finishIndex, const vector<RectInfo>& tileList);
 
 private:
-	void FindRoute(const std::vector<Image*>& tileSpace);
-	ASTAR_NODE* CreateNode(ASTAR_NODE* pParent, int index, const std::vector<Image*>& tileSpace);
+	void FindRoute(const std::vector<RectInfo>& tileList);
+	AStarNodeInfo* CreateNode(const AStarNodeInfo* pParent, const WORD index, const bool isDiagonal, const vector<RectInfo>& tileList);
 	bool CheckList(size_t index);
-	static bool Compare(ASTAR_NODE* pSrcNode, ASTAR_NODE* pDestNode);
+	static bool Compare(AStarNodeInfo* pSrcNode, AStarNodeInfo* pDestNode);
 
 private:
-	list<ASTAR_NODE*> mOpenList;
-	list<ASTAR_NODE*> mCloseList;
+	list<AStarNodeInfo*> mOpenList;
+	list<AStarNodeInfo*> mCloseList;
 
-	stack<ASTAR_NODE*> mBestRoadSpace;
+	stack<AStarNodeInfo*> mBestRoadSpace;
 
 private:
 	WORD mStartIndex = 0;
