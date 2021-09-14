@@ -169,7 +169,8 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 
 		if (parent->index == mFinishIndex)
 		{
-			wprintf(L"closeListNum:%zd\n", mCloseList.size());
+			wprintf(L"closeListNum:%zd  openListNum:%zd\n", mCloseList.size(), mOpenList.size());
+
 			while (true)
 			{
 				// Visualization AStar 길찾기 경로 표시
