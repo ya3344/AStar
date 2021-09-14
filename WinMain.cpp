@@ -15,7 +15,6 @@
 HINSTANCE hInst;                                // 현재 인스턴스입니다.
 WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
-RECT gWindowRect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
 Visualization gVisualization;
 
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
@@ -42,9 +41,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
 
-    // Visualization 타일 세팅 초기화
-    gVisualization.Initialize();
-
     // 애플리케이션 초기화를 수행합니다:
     if (!InitInstance (hInstance, nCmdShow))
     {
@@ -55,14 +51,54 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_ASTAR));
 
     MSG msg;
+    msg.message = WM_NULL;
 
-    // 기본 메시지 루프입니다:
-    while (GetMessage(&msg, nullptr, 0, 0))
+    bool isInit = false;
+    DWORD oldTime = timeGetTime();
+
+    // FPS(Frame Per Second) 출력해보기.
+    TCHAR strFPS[32] = L"";
+    WORD fps = 0;
+    DWORD oldFps = timeGetTime();
+
+    // Visualization 타일 세팅 및 렌더링 초기화
+    isInit = gVisualization.Initialize();
+
+    // 기본 메시지 루프입니다.
+    while (msg.message != WM_QUIT)
     {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+        if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
         {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+            if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
+            {
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
+        }
+        else
+        {
+            if (isInit)
+            {
+                //dwCurTime = GetTickCount();
+                if (oldFps + 1000 < timeGetTime())
+                {
+                    oldFps = timeGetTime();
+
+                    swprintf_s(strFPS, L"FPS: %d", fps);
+                    fps = 0;
+
+                    // SetWindowText: 현재 윈도우 타이틀바에 문자열을 출력하는 함수.
+                	SetWindowText(gHWnd, strFPS);
+                }
+                if (oldTime + 10 < timeGetTime())
+                {
+                    oldTime = timeGetTime();
+                    gVisualization.AStarWorking();
+                   // gVisualization.Render();
+                    ++fps;
+                }
+            }
+
         }
     }
 
@@ -145,11 +181,11 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    HDC hdc;
+ /*   HDC hdc;
     HDC memDC;
     HBITMAP selectBitmap;
-    HBITMAP oldBitmap;
-    PAINTSTRUCT ps;
+    HBITMAP oldBitmap;*/
+   // PAINTSTRUCT ps;
     //static POINT mousePoint;
     static RectInfo rectInfo;
     static BYTE rButtonCount = 0;
@@ -181,9 +217,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             rectInfo.point.y = HIWORD(lParam);
             //ScreenToClient(gHWnd, &rectInfo.point);
             wprintf(L"X: %d Y: %d\n", rectInfo.point.x, rectInfo.point.y);
-            rectInfo.index = BLOCK_INDEX;
+            rectInfo.nodeIndex = BLOCK_INDEX;
             gVisualization.SetTilePicking(rectInfo);
-            InvalidateRect(hWnd, NULL, false);
         }
         break;
     case WM_LBUTTONUP:
@@ -202,11 +237,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             //ScreenToClient(gHWnd, &rectInfo.point);
             wprintf(L"X: %d Y: %d\n", rectInfo.point.x, rectInfo.point.y);
             if(rButtonCount == 0)
-                rectInfo.index = START_INDEX;
+                rectInfo.nodeIndex = START_INDEX;
             else if(rButtonCount == 1)
-                rectInfo.index = FINISH_INDEX;
+                rectInfo.nodeIndex = FINISH_INDEX;
             gVisualization.SetTilePicking(rectInfo);
-            InvalidateRect(hWnd, NULL, false);
             ++rButtonCount;
         }
         break;
@@ -218,32 +252,40 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 rectInfo.point.y = HIWORD(lParam);
                 //ScreenToClient(gHWnd, &rectInfo.point);
                 wprintf(L"X: %d Y: %d\n", rectInfo.point.x, rectInfo.point.y);
-                rectInfo.index = BLOCK_INDEX;
+                rectInfo.nodeIndex = BLOCK_INDEX;
                 gVisualization.SetTilePicking(rectInfo);
-                InvalidateRect(hWnd, NULL, false);
             }
+        }
+        break;
+    case WM_MOUSEWHEEL:
+        {
+            gVisualization.SetBlockIndexClear();
         }
         break;
     case WM_PAINT:
         {
             // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
-            hdc = BeginPaint(hWnd, &ps);
-            //	DoubleBuffering
-            memDC = CreateCompatibleDC(hdc);
-            selectBitmap = CreateCompatibleBitmap(hdc, WINDOW_WIDTH, WINDOW_HEIGHT);
-            oldBitmap = (HBITMAP)SelectObject(memDC, selectBitmap);
-            //	Begin work
-            SetBkMode(memDC, TRANSPARENT);
-            SetTextColor(memDC, RGB(255, 255, 255));
-            FillRect(memDC, &gWindowRect, (HBRUSH)GetStockObject(WHITE_BRUSH));
-            gVisualization.CreateTile(memDC);
-            
+            //hdc = BeginPaint(hWnd, &ps);
+            ////	DoubleBuffering
+            //memDC = CreateCompatibleDC(hdc);
+            //selectBitmap = CreateCompatibleBitmap(hdc, WINDOW_WIDTH, WINDOW_HEIGHT);
+            //oldBitmap = (HBITMAP)SelectObject(memDC, selectBitmap);
+            ////	Begin work
+            //SetBkMode(memDC, TRANSPARENT);
+            //SetTextColor(memDC, RGB(255, 255, 255));
+            //FillRect(memDC, &gWindowRect, (HBRUSH)GetStockObject(WHITE_BRUSH));
+            //gVisualization.CreateTile(memDC);
+            //
 
-            BitBlt(hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, memDC, 0, 0, SRCCOPY);
+            //BitBlt(hdc, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, memDC, 0, 0, SRCCOPY);
 
-            SelectObject(memDC, oldBitmap);
-            DeleteObject(selectBitmap);
-            DeleteDC(memDC);
+            //SelectObject(memDC, oldBitmap);
+            //DeleteObject(selectBitmap);
+            //DeleteDC(memDC);
+            //EndPaint(hWnd, &ps);
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hWnd, &ps);
+            // TODO: 여기에 hdc를 사용하는 그리기 코드를 추가합니다...
             EndPaint(hWnd, &ps);
 
         }

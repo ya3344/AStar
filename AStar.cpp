@@ -1,5 +1,12 @@
 #include "pch.h"
 #include "AStar.h"
+#include "Visualization.h"
+
+AStar::AStar(Visualization* visualization)
+{
+	mVisualization = visualization;
+	_ASSERT(mVisualization != nullptr);
+}
 
 AStar::~AStar()
 {
@@ -10,12 +17,12 @@ bool AStar::Initialize(const WORD tile_MaxNumX, const WORD tile_MaxNumY)
 {
 	mTile_MaxNumX = tile_MaxNumX;
 	mTile_MaxNumY = tile_MaxNumY;
-
+	wprintf(L"mTile_MaxNumX:%d mTile_MaxNumY:%d", tile_MaxNumX, tile_MaxNumY);
 	return true;
 }
 
 
-bool AStar::AStarStart(WORD startIndex, WORD finishIndex, const std::vector<RectInfo>& tileList)
+bool AStar::AStarStart(const WORD startIndex, const WORD finishIndex, vector<RectInfo*>& tileList)
 {
 	if (startIndex == finishIndex)
 	{
@@ -25,7 +32,7 @@ bool AStar::AStarStart(WORD startIndex, WORD finishIndex, const std::vector<Rect
 	if (finishIndex < 0 || finishIndex >= tileList.size())
 		return false;
 
-	if (BLOCK_INDEX == tileList[finishIndex].index || BLOCK_INDEX == tileList[startIndex].index)
+	if (BLOCK_INDEX == tileList[finishIndex]->nodeIndex || BLOCK_INDEX == tileList[startIndex]->nodeIndex)
 		return false;
 
 	mStartIndex = startIndex;
@@ -33,159 +40,183 @@ bool AStar::AStarStart(WORD startIndex, WORD finishIndex, const std::vector<Rect
 
 	Release();
 	
-	FindRoute(tileList);
+	return FindRoute(tileList);
 
-	if (mBestRoadSpace.empty())
-		return false;
+	//if (mBestRoadSpace.empty())
+	//	return false;
+}
 
+bool AStar::FindRoute(vector<RectInfo*>& tileList)
+{
+	AStarNodeInfo* node = nullptr;
+	WORD count = 0;
+	WORD index = 0;
+
+	// 여덟 방향을 조사한다.
+	AStarNodeInfo* parent = new AStarNodeInfo(0.f, 0.f, mStartIndex, nullptr);
+	mCloseList.emplace_back(parent);
+
+	while (true)
+	{
+		if (count >= MAX_NODE_COUNT)
+		{
+			wprintf(L"MAX_NODE_COUNT ERROR!");
+			Release();
+			return false;
+		}
+
+		// 위
+		index = parent->index - mTile_MaxNumX;
+
+		if (parent->index >= mTile_MaxNumX && tileList[index]->nodeIndex != BLOCK_INDEX
+			&& CheckList(index))
+		{
+			node = CreateNode(parent, index, false, tileList);
+			mOpenList.emplace_back(node);
+		}
+
+		// 오른쪽 위
+		index = (parent->index - mTile_MaxNumX) + 1;
+
+		if (parent->index >= mTile_MaxNumX && (parent->index % mTile_MaxNumX) != mTile_MaxNumX - 1
+			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
+		{
+			node = CreateNode(parent, index, true, tileList);
+			mOpenList.emplace_back(node);
+		}
+
+		// 오른쪽
+		index = parent->index + 1;
+
+		if ((parent->index % mTile_MaxNumX) != mTile_MaxNumX - 1
+			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
+		{
+			node = CreateNode(parent, index, false, tileList);
+			mOpenList.emplace_back(node);
+		}
+
+		// 오른쪽 아래 
+		index = (parent->index + mTile_MaxNumX) + 1;
+
+		if ((parent->index / mTile_MaxNumX) < mTile_MaxNumY - 1  && (parent->index % mTile_MaxNumX) != mTile_MaxNumX - 1
+			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
+		{
+			node = CreateNode(parent, index, true, tileList);
+			mOpenList.emplace_back(node);
+		}
+
+		// 아래
+		index = parent->index + mTile_MaxNumX;
+
+		if ((parent->index / mTile_MaxNumX) < mTile_MaxNumY - 1
+			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
+		{
+			node = CreateNode(parent, index, false, tileList);
+			mOpenList.emplace_back(node);
+		}
+
+		// 왼쪽 아래
+		index = (parent->index + mTile_MaxNumX) - 1;
+
+		if ((parent->index / mTile_MaxNumX) < mTile_MaxNumY - 1 && (parent->index % mTile_MaxNumX) > 0
+			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
+		{
+			node = CreateNode(parent, index, true, tileList);
+			mOpenList.emplace_back(node);
+		}
+
+		// 왼쪽
+		index = parent->index - 1;
+
+		if ((parent->index % mTile_MaxNumX) > 0
+			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
+		{
+			node = CreateNode(parent, index, false, tileList);
+			mOpenList.emplace_back(node);
+		}
+
+		// 왼쪽 위 
+		index = (parent->index - mTile_MaxNumX) - 1;
+		if ((parent->index % mTile_MaxNumX) > 0 && parent->index >= mTile_MaxNumX
+			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
+		{
+			node = CreateNode(parent, index, true, tileList);
+			mOpenList.emplace_back(node);
+		}
+
+		if (mOpenList.empty())
+		{
+			return false;
+		}
+			
+		// 가중치 기준으로 소팅한다.
+		mOpenList.sort(Compare);
+
+		const auto iterOpenList = mOpenList.begin();
+		mCloseList.emplace_back(*iterOpenList);
+
+		parent = *iterOpenList;
+		mOpenList.erase(iterOpenList);
+
+		if (parent->index == mFinishIndex)
+		{
+			while (true)
+			{
+				// Visualization AStar 길찾기 경로 표시
+				if (parent->index != mStartIndex && parent->index != mFinishIndex)
+				{
+					tileList[parent->index]->nodeIndex = CLOSE_INDEX;
+					mVisualization->Render();
+				}
+
+				// 경로를 생성해준다.
+				if (parent->parent == nullptr)
+					break;
+
+				//mBestRoadSpace.emplace(parent);
+				parent = parent->parent;
+				
+			}
+			break;
+		}
+
+		++count;
+	}
 	return true;
 }
 
-void AStar::FindRoute(const std::vector<RectInfo>& tileList)
+AStar::AStarNodeInfo* AStar::CreateNode(AStarNodeInfo* parent, const WORD index, const bool isDiagonal, vector<RectInfo*>& tileList)
 {
-	// 여덟 방향을 조사한다.
-	//ASTAR_NODE* pParent = new ASTAR_NODE(0.f, (int)mStartIndex, nullptr, L"Me");
-	//mCloseList.emplace_back(pParent);
-
-	//ASTAR_NODE* pNode = nullptr;
-	//int count = 0;
-
-	//while (true)
-	//{
-	//	if (count >= 15)
-	//	{
-	//		Release();
-	//		return;
-	//	}
-
-	//	// 위
-	//	int index = pParent->index - gTileNum.X;
-
-	//	if (pParent->index >= gTileNum.X && tileSpace[index]->GetDrawID() != TILE_BLOCK
-	//		&& CheckList(index))
-	//	{
-	//		pNode = CreateNode(pParent, index, tileSpace, mMotion[mObjID][OBJ_MOTION::UP]);
-	//		mOpenList.emplace_back(pNode);
-	//	}
-
-	//	// 오른쪽 위
-	//	index = (pParent->index - gTileNum.X) + 1;
-
-	//	if (pParent->index >= gTileNum.X && (pParent->index % gTileNum.X) != gTileNum.X - 1
-	//		&& tileSpace[index]->GetDrawID() != TILE_BLOCK && CheckList(index))
-	//	{
-	//		pNode = CreateNode(pParent, index, tileSpace, mMotion[mObjID][OBJ_MOTION::RU]);
-	//		mOpenList.emplace_back(pNode);
-	//	}
-
-	//	// 오른쪽
-	//	index = pParent->index + 1;
-
-	//	if ((pParent->index % gTileNum.X) != gTileNum.X - 1
-	//		&& tileSpace[index]->GetDrawID() != TILE_BLOCK && CheckList(index))
-	//	{
-	//		pNode = CreateNode(pParent, index, tileSpace, mMotion[mObjID][OBJ_MOTION::RIGHT]);
-	//		mOpenList.emplace_back(pNode);
-	//	}
-
-	//	// 오른쪽 아래 
-	//	index = (pParent->index + gTileNum.X) + 1;
-
-	//	if ((pParent->index / gTileNum.X) < gTileNum.X - 1  && (pParent->index % gTileNum.X) != gTileNum.X - 1
-	//		&& tileSpace[index]->GetDrawID() != TILE_BLOCK && CheckList(index))
-	//	{
-	//		pNode = CreateNode(pParent, index, tileSpace, mMotion[mObjID][OBJ_MOTION::RD]);
-	//		mOpenList.emplace_back(pNode);
-	//	}
-
-	//	// 아래
-	//	index = pParent->index + gTileNum.X;
-
-	//	if ((pParent->index / gTileNum.X) < gTileNum.X - 1
-	//		&& tileSpace[index]->GetDrawID() != TILE_BLOCK && CheckList(index))
-	//	{
-	//		pNode = CreateNode(pParent, index, tileSpace, mMotion[mObjID][OBJ_MOTION::DOWN]);
-	//		mOpenList.emplace_back(pNode);
-	//	}
-
-	//	// 왼쪽 아래
-	//	index = (pParent->index + gTileNum.X) - 1;
-
-	//	if ((pParent->index / gTileNum.X) < gTileNum.X - 1 && (pParent->index % gTileNum.X) > 0
-	//		&& tileSpace[index]->GetDrawID() != TILE_BLOCK && CheckList(index))
-	//	{
-	//		pNode = CreateNode(pParent, index, tileSpace, mMotion[mObjID][OBJ_MOTION::LD]);
-	//		mOpenList.emplace_back(pNode);
-	//	}
-
-	//	// 왼쪽
-	//	index = pParent->index - 1;
-
-	//	if ((pParent->index % gTileNum.X) > 0
-	//		&& tileSpace[index]->GetDrawID() != TILE_BLOCK && CheckList(index))
-	//	{
-	//		pNode = CreateNode(pParent, index, tileSpace, mMotion[mObjID][OBJ_MOTION::LEFT]);
-	//		mOpenList.emplace_back(pNode);
-	//	}
-
-	//	// 왼쪽 위 
-	//	index = (pParent->index - gTileNum.X) - 1;
-	//	if ((pParent->index % gTileNum.X) > 0 && pParent->index >= gTileNum.X
-	//		&& tileSpace[index]->GetDrawID() != TILE_BLOCK && CheckList(index))
-	//	{
-	//		pNode = CreateNode(pParent, index, tileSpace, mMotion[mObjID][OBJ_MOTION::LU]);
-	//		mOpenList.emplace_back(pNode);
-	//	}
-
-	//	if (mOpenList.empty())
-	//	{
-	//		return;
-	//	}
-	//		
-
-	//	// 가중치 기준으로 소팅한다.
-	//	mOpenList.sort(Compare);
-
-	//	auto& iterOpenList = mOpenList.begin();
-	//	mCloseList.emplace_back(*iterOpenList);
-
-	//	pParent = *iterOpenList;
-	//	mOpenList.erase(iterOpenList);
-
-	//	if (pParent->index == mFinishIndex)
-	//	{
-	//		while (true)
-	//		{
-	//			// 경로를 생성해준다.
-	//			if (pParent->pParent == nullptr)
-	//				break;
-
-	//			mBestRoadSpace.emplace(pParent);
-	//			pParent = pParent->pParent;
-	//		}
-	//		break;
-	//	}
-
-	//	++count;
-	//}
-}
-
-AStar::AStarNodeInfo* AStar::CreateNode(const AStarNodeInfo* pParent, const WORD index, const bool isDiagonal, const vector<RectInfo>& tileList)
-{
-	WORD dx = (WORD)(abs(tileList[mFinishIndex].point.x - tileList[index].point.x)) / RECT_SIZE;
-	WORD dy = (WORD)(abs(tileList[mFinishIndex].point.y - tileList[index].point.y)) / RECT_SIZE;
+	// Manhattan 방식 사용하여 H(현재 사각형에서 목적지 비용 계산)
+	WORD dx = (WORD)(abs(tileList[mFinishIndex]->point.x - tileList[index]->point.x)) / RECT_SIZE;
+	WORD dy = (WORD)(abs(tileList[mFinishIndex]->point.y - tileList[index]->point.y)) / RECT_SIZE;
 	WORD H = dx + dy;
 	float G;
+	float cost;
+
 	if (true == isDiagonal)
 	{
-		G = pParent->G + 1.5f;
+		// 대각선 이동은 비용을 추가로 할당함.
+		G = parent->G + 1.5f;
 	}
 	else
 	{
-		G = pParent->G + 1.f;
+		G = parent->G + 1.f;
 	}
 
-	AStarNodeInfo* node = new AStarNodeInfo(G, H, index, pParent);
+	// 현재까지 이동하는데 걸린 비용과 예상 비용을 합친 총 비용
+	cost = G + H; 
+	AStarNodeInfo* node = new AStarNodeInfo(G, cost, index, parent);
+
+	// Visualization 노드 표시를 위한 정보 기입
+	tileList[index]->cost = cost;
+	tileList[index]->G = G;
+	tileList[index]->H = H;
+	// Visualization 노드 색깔변화 표시
+	if(index != mStartIndex && index != mFinishIndex)
+		tileList[index]->nodeIndex = OPEN_INDEX;
+
+	mVisualization->Render();
 
 	return node;
 }
@@ -207,10 +238,9 @@ bool AStar::CheckList(size_t index)
 	return true;
 }
 
-bool AStar::Compare(AStarNodeInfo* pSrcNode, AStarNodeInfo* pDestNode)
+bool AStar::Compare(const AStarNodeInfo* srcNode, const AStarNodeInfo* compareNode)
 {
-	//return pSrcNode->cost < pDestNode->cost;
-	return false;
+	return srcNode->cost < compareNode->cost;
 }
 
 

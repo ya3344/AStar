@@ -1,5 +1,7 @@
 #pragma once
+
 extern HWND gHWnd;
+extern RECT gWindowRect;
 
 enum eTileIndex
 {
@@ -7,17 +9,22 @@ enum eTileIndex
 	BLOCK_INDEX,
 	START_INDEX,
 	FINISH_INDEX,
-	RECT_SIZE = 40,
+	OPEN_INDEX,
+	CLOSE_INDEX,
+	RECT_SIZE = 80,
 };
 
 enum eWindowINdex
 {
-	WINDOW_WIDTH = 800,
-	WINDOW_HEIGHT = 400,
+	WINDOW_WIDTH = 1200,
+	WINDOW_HEIGHT = 800,
 };
 
 struct RectInfo
 {
 	POINT point;
-	BYTE index;
+	BYTE nodeIndex;
+	float G = 0.f;
+	WORD H = 0;
+	float cost = 0.f;
 };

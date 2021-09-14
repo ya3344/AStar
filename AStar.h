@@ -1,27 +1,35 @@
 #pragma once
 
+class Visualization;
 
 class AStar
 {
 public:
-	AStar() = default;
+	explicit AStar(Visualization* visualization);
 	~AStar();
+
+private:
+	enum eAStarIndex
+	{
+		MAX_NODE_COUNT = 1000,
+	};
 
 private:
 	struct AStarNodeInfo
 	{
-		explicit AStarNodeInfo(const float G, const float H, const WORD index, const AStarNodeInfo* parent)
+		explicit AStarNodeInfo(const float G, const float cost, const WORD index, AStarNodeInfo* parent)
 		{
 			this->G = G;
-			this->H = H;
+			this->cost = cost;
 			this->index = index;
 			this->parent = parent;
 		}
 
-		float H = 0.f;
-		float G = 0.f;
+		float G = 0.f; // 시작점 부터 현재 사각형까지의 경로 비용
+		float cost = 0.f; // 현재까지 이동하는데 걸린 비용과 예상비용을 합친 비용(G + H) 
+		
 		WORD index = 0;
-		const AStarNodeInfo* parent = nullptr;
+		AStarNodeInfo* parent = nullptr;
 	};
 
 public:
@@ -30,18 +38,17 @@ public:
 	void Release(void);
 
 public:
-	bool AStarStart(WORD startIndex, WORD finishIndex, const vector<RectInfo>& tileList);
+	bool AStarStart(const WORD startIndex, const WORD finishIndex, vector<RectInfo*>& tileList);
 
 private:
-	void FindRoute(const std::vector<RectInfo>& tileList);
-	AStarNodeInfo* CreateNode(const AStarNodeInfo* pParent, const WORD index, const bool isDiagonal, const vector<RectInfo>& tileList);
+	bool FindRoute(vector<RectInfo*>& tileList);
+	AStarNodeInfo* CreateNode(AStarNodeInfo* parent, const WORD index, const bool isDiagonal, vector<RectInfo*>& tileList);
 	bool CheckList(size_t index);
-	static bool Compare(AStarNodeInfo* pSrcNode, AStarNodeInfo* pDestNode);
+	static bool Compare(const AStarNodeInfo* srcNode, const AStarNodeInfo* compareNode);
 
 private:
 	list<AStarNodeInfo*> mOpenList;
 	list<AStarNodeInfo*> mCloseList;
-
 	stack<AStarNodeInfo*> mBestRoadSpace;
 
 private:
@@ -50,5 +57,7 @@ private:
 	WORD mTile_MaxNumX = 0;
 	WORD mTile_MaxNumY = 0;
 
+private:
+	Visualization* mVisualization = nullptr;
 };
 

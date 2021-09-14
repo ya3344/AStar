@@ -5,13 +5,19 @@ public:
 	Visualization() = default;
 	~Visualization();
 
-private:
-	inline RECT RectPointPlus(const RECT rect, const POINT point);
+public:
+	bool Initialize();
+	void Release();
+	void DrawTile(HDC hdc);
+	void SetTilePicking(const RectInfo& rectInfo);
+	void SetBlockIndexClear();
 
 public:
-	void Initialize();
-	void CreateTile(HDC hdc);
-	void SetTilePicking(const RectInfo& rectInfo);
+	void AStarWorking();
+	void Render();
+	
+private:
+	inline RECT RectPointPlus(const RECT rect, const POINT point);
 
 private:
 	WORD mTile_MaxNumX = 0;
@@ -21,7 +27,15 @@ private:
 	RECT mRect;
 
 private:
-	vector<RectInfo> mTileList;
+	vector<RectInfo*> mTileList;
 	class AStar* mAStar = nullptr;
+	bool isAStarStart = false;
+
+//API Render 
+private:
+	HDC mhDC;
+	HDC mhMemDC;
+	HBITMAP mBitmap;
+	HBITMAP mOldBitmap;
 };
 
