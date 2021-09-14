@@ -82,7 +82,6 @@ void Visualization::DrawTile(HDC hdc)
 				{
 					brush = (HBRUSH)CreateSolidBrush(RGB(255, 0, 0));
 					wsprintf(inputText, L"Start");
-					
 				}
 				break;
 			case FINISH_INDEX:
@@ -144,13 +143,21 @@ void Visualization::DrawTile(HDC hdc)
 					DrawText(hdc, inputText, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 				}
 				break;
+#ifdef NODE_INFO_VIEW
 			case OPEN_INDEX:
 			case CLOSE_INDEX:
 				{
-					wsprintf(inputText, L"%0.f  %d\n%0.f", rectInfo->G, rectInfo->H, rectInfo->cost);
-					DrawText(hdc, inputText, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+					RECT tempRect;
+					tempRect = textRect;
+					tempRect.top = (LONG)(textRect.top - (RECT_SIZE * 0.7f));
+					swprintf_s(inputText, _countof(inputText), L"%0.1f   %d", rectInfo->G, rectInfo->H);
+					DrawText(hdc, inputText, -1, &tempRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+					tempRect.top = (LONG)(textRect.top + (RECT_SIZE * 0.7f));
+					swprintf_s(inputText, _countof(inputText), L"%0.1f", rectInfo->cost);
+					DrawText(hdc, inputText, -1, &tempRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 				}
 				break;
+#endif
 			default:
 				{
 					wsprintf(inputText, L"");

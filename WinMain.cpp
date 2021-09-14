@@ -90,11 +90,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                     // SetWindowText: 현재 윈도우 타이틀바에 문자열을 출력하는 함수.
                 	SetWindowText(gHWnd, strFPS);
                 }
-                if (oldTime + 10 < timeGetTime())
+                //if (oldTime  < timeGetTime())
                 {
                     oldTime = timeGetTime();
                     gVisualization.AStarWorking();
-                   // gVisualization.Render();
+                    gVisualization.Render();
                     ++fps;
                 }
             }
@@ -260,6 +260,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_MOUSEWHEEL:
         {
             gVisualization.SetBlockIndexClear();
+        }
+        break;
+    case WM_MBUTTONUP:
+        {
+            gIsNodeTrade = !gIsNodeTrade;
+            wprintf(L"gIsNodeTrade: %d\n", gIsNodeTrade);
         }
         break;
     case WM_PAINT:

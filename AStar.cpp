@@ -51,11 +51,12 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 	AStarNodeInfo* node = nullptr;
 	WORD count = 0;
 	WORD index = 0;
+	WORD finishCount = 0;
 
 	// 여덟 방향을 조사한다.
 	AStarNodeInfo* parent = new AStarNodeInfo(0.f, 0.f, mStartIndex, nullptr);
 	mCloseList.emplace_back(parent);
-
+	
 	while (true)
 	{
 		if (count >= MAX_NODE_COUNT)
@@ -72,7 +73,8 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 			&& CheckList(index))
 		{
 			node = CreateNode(parent, index, false, tileList);
-			mOpenList.emplace_back(node);
+			if(node != nullptr)
+				mOpenList.emplace_back(node);
 		}
 
 		// 오른쪽 위
@@ -82,7 +84,8 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
 		{
 			node = CreateNode(parent, index, true, tileList);
-			mOpenList.emplace_back(node);
+			if (node != nullptr)
+				mOpenList.emplace_back(node);
 		}
 
 		// 오른쪽
@@ -92,7 +95,8 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
 		{
 			node = CreateNode(parent, index, false, tileList);
-			mOpenList.emplace_back(node);
+			if (node != nullptr)
+				mOpenList.emplace_back(node);
 		}
 
 		// 오른쪽 아래 
@@ -102,7 +106,8 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
 		{
 			node = CreateNode(parent, index, true, tileList);
-			mOpenList.emplace_back(node);
+			if (node != nullptr)
+				mOpenList.emplace_back(node);
 		}
 
 		// 아래
@@ -112,7 +117,8 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
 		{
 			node = CreateNode(parent, index, false, tileList);
-			mOpenList.emplace_back(node);
+			if (node != nullptr)
+				mOpenList.emplace_back(node);
 		}
 
 		// 왼쪽 아래
@@ -122,7 +128,8 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
 		{
 			node = CreateNode(parent, index, true, tileList);
-			mOpenList.emplace_back(node);
+			if (node != nullptr)
+				mOpenList.emplace_back(node);
 		}
 
 		// 왼쪽
@@ -132,7 +139,8 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
 		{
 			node = CreateNode(parent, index, false, tileList);
-			mOpenList.emplace_back(node);
+			if (node != nullptr)
+				mOpenList.emplace_back(node);
 		}
 
 		// 왼쪽 위 
@@ -141,7 +149,8 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 			&& tileList[index]->nodeIndex != BLOCK_INDEX && CheckList(index))
 		{
 			node = CreateNode(parent, index, true, tileList);
-			mOpenList.emplace_back(node);
+			if (node != nullptr)
+				mOpenList.emplace_back(node);
 		}
 
 		if (mOpenList.empty())
@@ -160,6 +169,7 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 
 		if (parent->index == mFinishIndex)
 		{
+			wprintf(L"closeListNum:%zd\n", mCloseList.size());
 			while (true)
 			{
 				// Visualization AStar 길찾기 경로 표시
@@ -171,11 +181,14 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 
 				// 경로를 생성해준다.
 				if (parent->parent == nullptr)
+				{
+					wprintf(L"finishCount:%d\n", finishCount);
 					break;
+				}
 
 				//mBestRoadSpace.emplace(parent);
 				parent = parent->parent;
-				
+				++finishCount;
 			}
 			break;
 		}
@@ -205,7 +218,30 @@ AStar::AStarNodeInfo* AStar::CreateNode(AStarNodeInfo* parent, const WORD index,
 	}
 
 	// 현재까지 이동하는데 걸린 비용과 예상 비용을 합친 총 비용
-	cost = G + H; 
+	cost = G + H;
+
+	// 기존에 오프리스트에 있는 노드와 비교하여 대체 진행
+	if (true == gIsNodeTrade)
+	{
+		for (AStarNodeInfo* pNode : mOpenList)
+		{
+			if (pNode->index == index)
+			{
+				// cost 가 더적기 때문에 cost 및 부모 교체
+				if (cost < pNode->cost)
+				{
+					pNode->cost = cost;
+					pNode->parent = parent;
+					return nullptr;
+				}
+				else
+				{
+					return nullptr;
+				}
+			}
+		}
+	}
+
 	AStarNodeInfo* node = new AStarNodeInfo(G, cost, index, parent);
 
 	// Visualization 노드 표시를 위한 정보 기입
@@ -221,18 +257,21 @@ AStar::AStarNodeInfo* AStar::CreateNode(AStarNodeInfo* parent, const WORD index,
 	return node;
 }
 
-bool AStar::CheckList(size_t index)
+bool AStar::CheckList(const WORD index)
 {
-	for (const AStarNodeInfo* pNode : mOpenList)
+	for (const AStarNodeInfo* pNode : mCloseList)
 	{
 		if (pNode->index == index)
 			return false;
 	}
 
-	for (const AStarNodeInfo* pNode : mCloseList)
+	if (false == gIsNodeTrade)
 	{
-		if (pNode->index == index)
-			return false;
+		for (const AStarNodeInfo* pNode : mOpenList)
+		{
+			if (pNode->index == index)
+				return false;
+		}
 	}
 
 	return true;

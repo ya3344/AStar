@@ -1,6 +1,7 @@
 #pragma once
 
 class Visualization;
+//#define NODE_TRADE
 
 class AStar
 {
@@ -43,7 +44,7 @@ public:
 private:
 	bool FindRoute(vector<RectInfo*>& tileList);
 	AStarNodeInfo* CreateNode(AStarNodeInfo* parent, const WORD index, const bool isDiagonal, vector<RectInfo*>& tileList);
-	bool CheckList(size_t index);
+	bool CheckList(const WORD index);
 	static bool Compare(const AStarNodeInfo* srcNode, const AStarNodeInfo* compareNode);
 
 private:

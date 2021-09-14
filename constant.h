@@ -2,6 +2,7 @@
 
 extern HWND gHWnd;
 extern RECT gWindowRect;
+extern bool gIsNodeTrade;
 
 enum eTileIndex
 {
@@ -11,13 +12,13 @@ enum eTileIndex
 	FINISH_INDEX,
 	OPEN_INDEX,
 	CLOSE_INDEX,
-	RECT_SIZE = 80,
+	RECT_SIZE = 60,
 };
 
 enum eWindowINdex
 {
-	WINDOW_WIDTH = 1200,
-	WINDOW_HEIGHT = 800,
+	WINDOW_WIDTH = 1680,
+	WINDOW_HEIGHT = 960,
 };
 
 struct RectInfo
