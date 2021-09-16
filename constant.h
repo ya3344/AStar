@@ -12,6 +12,7 @@ enum eTileIndex
 	FINISH_INDEX,
 	OPEN_INDEX,
 	CLOSE_INDEX,
+	DESTINATION_INDEX,
 	RECT_SIZE = 60,
 };
 
@@ -27,5 +28,5 @@ struct RectInfo
 	BYTE nodeIndex;
 	float G = 0.f;
 	WORD H = 0;
-	float cost = 0.f;
+	float F = 0.f;
 };

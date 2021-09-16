@@ -3,4 +3,4 @@
 
 HWND gHWnd;
 RECT gWindowRect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
-bool gIsNodeTrade = false;
+bool gIsNodeTrade = true;

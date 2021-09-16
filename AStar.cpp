@@ -164,6 +164,12 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 		const auto iterOpenList = mOpenList.begin();
 		mCloseList.emplace_back(*iterOpenList);
 
+		// Render
+		if ((*iterOpenList)->index != mFinishIndex && (*iterOpenList)->index != mStartIndex)
+		{
+			tileList[(*iterOpenList)->index]->nodeIndex = CLOSE_INDEX;
+		}
+
 		parent = *iterOpenList;
 		mOpenList.erase(iterOpenList);
 
@@ -174,9 +180,9 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 			while (true)
 			{
 				// Visualization AStar 길찾기 경로 표시
-				if (parent->index != mStartIndex && parent->index != mFinishIndex)
+				if (parent->index != mFinishIndex && parent->index != mStartIndex)
 				{
-					tileList[parent->index]->nodeIndex = CLOSE_INDEX;
+					tileList[parent->index]->nodeIndex = DESTINATION_INDEX;
 					mVisualization->Render();
 				}
 
@@ -187,7 +193,6 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 					break;
 				}
 
-				//mBestRoadSpace.emplace(parent);
 				parent = parent->parent;
 				++finishCount;
 			}
@@ -202,11 +207,13 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 AStar::AStarNodeInfo* AStar::CreateNode(AStarNodeInfo* parent, const WORD index, const bool isDiagonal, vector<RectInfo*>& tileList)
 {
 	// Manhattan 방식 사용하여 H(현재 사각형에서 목적지 비용 계산)
+	//Sleep(50);
 	WORD dx = (WORD)(abs(tileList[mFinishIndex]->point.x - tileList[index]->point.x)) / RECT_SIZE;
 	WORD dy = (WORD)(abs(tileList[mFinishIndex]->point.y - tileList[index]->point.y)) / RECT_SIZE;
-	WORD H = dx + dy;
+	// H 비중을 높여서 똑같은 수치인 노드인 경우 가까운 노드를 우선으로 선택되도록 작업
+	WORD H = (dx + dy); 
 	float G;
-	float cost;
+	float F;
 
 	if (true == isDiagonal)
 	{
@@ -219,7 +226,7 @@ AStar::AStarNodeInfo* AStar::CreateNode(AStarNodeInfo* parent, const WORD index,
 	}
 
 	// 현재까지 이동하는데 걸린 비용과 예상 비용을 합친 총 비용
-	cost = G + H;
+	F = G + H;
 
 	// 기존에 오프리스트에 있는 노드와 비교하여 대체 진행
 	if (true == gIsNodeTrade)
@@ -228,10 +235,10 @@ AStar::AStarNodeInfo* AStar::CreateNode(AStarNodeInfo* parent, const WORD index,
 		{
 			if (pNode->index == index)
 			{
-				// cost 가 더적기 때문에 cost 및 부모 교체
-				if (cost < pNode->cost)
+				// G 가 더적기 때문에 G 및 부모 교체
+				if (G < pNode->G)
 				{
-					pNode->cost = cost;
+					pNode->G = G;
 					pNode->parent = parent;
 					return nullptr;
 				}
@@ -243,10 +250,10 @@ AStar::AStarNodeInfo* AStar::CreateNode(AStarNodeInfo* parent, const WORD index,
 		}
 	}
 
-	AStarNodeInfo* node = new AStarNodeInfo(G, cost, index, parent);
+	AStarNodeInfo* node = new AStarNodeInfo(G, F, index, parent);
 
 	// Visualization 노드 표시를 위한 정보 기입
-	tileList[index]->cost = cost;
+	tileList[index]->F = F;
 	tileList[index]->G = G;
 	tileList[index]->H = H;
 	// Visualization 노드 색깔변화 표시
@@ -280,7 +287,7 @@ bool AStar::CheckList(const WORD index)
 
 bool AStar::Compare(const AStarNodeInfo* srcNode, const AStarNodeInfo* compareNode)
 {
-	return srcNode->cost < compareNode->cost;
+	return srcNode->F < compareNode->F;
 }
 
 

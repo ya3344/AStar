@@ -9,6 +9,7 @@ public:
 	bool Initialize();
 	void Release();
 	void DrawTile(HDC hdc);
+	void DrawFinishLine(const POINT& point);
 	void SetTilePicking(const RectInfo& rectInfo);
 	void SetBlockIndexClear();
 
@@ -17,7 +18,7 @@ public:
 	void Render();
 	
 private:
-	inline RECT RectPointPlus(const RECT rect, const POINT point);
+	inline RECT RectPointPlus(const RECT rect, const POINT& point);
 
 private:
 	WORD mTile_MaxNumX = 0;

@@ -86,6 +86,7 @@ void Visualization::DrawTile(HDC hdc)
 				break;
 			case FINISH_INDEX:
 				{
+					MoveToEx(hdc, rectInfo->point.x, rectInfo->point.y, nullptr);
 					brush = (HBRUSH)CreateSolidBrush(RGB(255, 0, 0));
 					wsprintf(inputText, L"Finish");					
 				}
@@ -97,6 +98,12 @@ void Visualization::DrawTile(HDC hdc)
 				break;
 			case CLOSE_INDEX:
 				{
+					brush = (HBRUSH)CreateSolidBrush(RGB(125, 125, 255));
+				}
+				break;
+			case DESTINATION_INDEX:
+				{
+					LineTo(hdc, rectInfo->point.x, rectInfo->point.y);
 					brush = (HBRUSH)CreateSolidBrush(RGB(255, 127, 0));
 				}
 				break;
@@ -146,6 +153,7 @@ void Visualization::DrawTile(HDC hdc)
 #ifdef NODE_INFO_VIEW
 			case OPEN_INDEX:
 			case CLOSE_INDEX:
+			case DESTINATION_INDEX:
 				{
 					RECT tempRect;
 					tempRect = textRect;
@@ -153,7 +161,7 @@ void Visualization::DrawTile(HDC hdc)
 					swprintf_s(inputText, _countof(inputText), L"%0.1f   %d", rectInfo->G, rectInfo->H);
 					DrawText(hdc, inputText, -1, &tempRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 					tempRect.top = (LONG)(textRect.top + (RECT_SIZE * 0.7f));
-					swprintf_s(inputText, _countof(inputText), L"%0.1f", rectInfo->cost);
+					swprintf_s(inputText, _countof(inputText), L"%0.1f", rectInfo->F);
 					DrawText(hdc, inputText, -1, &tempRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 				}
 				break;
@@ -169,6 +177,30 @@ void Visualization::DrawTile(HDC hdc)
 		SelectObject(hdc, oldBrush);
 		DeleteObject(brush);
 	}
+}
+
+void Visualization::DrawFinishLine(const POINT& point)
+{
+	static bool isMoveTo = true;
+
+	//SetBkMode(mhMemDC, TRANSPARENT);
+	//SetTextColor(mhMemDC, RGB(255, 255, 255));
+	//FillRect(mhMemDC, &gWindowRect, (HBRUSH)GetStockObject(BLACK_BRUSH));
+
+	if (true == isMoveTo)
+	{
+		MoveToEx(mhMemDC, point.x, point.y, nullptr);
+		isMoveTo = false;
+	}
+	else
+	{
+		LineTo(mhMemDC, point.x, point.y);
+		//BitBlt(mhDC, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, mhMemDC, 0, 0, SRCCOPY);
+	}
+
+
+	//Render();
+	
 }
 
 void Visualization::SetTilePicking(const RectInfo& rectInfo)
@@ -281,7 +313,7 @@ void Visualization::Render()
 	BitBlt(mhDC, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, mhMemDC, 0, 0, SRCCOPY);
 }
 
-inline RECT Visualization::RectPointPlus(const RECT rect, const POINT point)
+inline RECT Visualization::RectPointPlus(const RECT rect, const POINT& point)
 {
 	RECT rectResult =
 	{

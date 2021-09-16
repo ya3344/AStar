@@ -18,16 +18,16 @@ private:
 private:
 	struct AStarNodeInfo
 	{
-		explicit AStarNodeInfo(const float G, const float cost, const WORD index, AStarNodeInfo* parent)
+		explicit AStarNodeInfo(const float G, const float F, const WORD index, AStarNodeInfo* parent)
 		{
 			this->G = G;
-			this->cost = cost;
+			this->F = F;
 			this->index = index;
 			this->parent = parent;
 		}
 
 		float G = 0.f; // 시작점 부터 현재 사각형까지의 경로 비용
-		float cost = 0.f; // 현재까지 이동하는데 걸린 비용과 예상비용을 합친 비용(G + H) 
+		float F = 0.f; // 현재까지 이동하는데 걸린 비용과 예상비용을 합친 비용(G + H) 
 		
 		WORD index = 0;
 		AStarNodeInfo* parent = nullptr;
