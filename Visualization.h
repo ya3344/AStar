@@ -16,7 +16,7 @@ public:
 public:
 	void AStarWorking();
 	void Render();
-	
+	void RenderBitBlt();
 private:
 	inline RECT RectPointPlus(const RECT rect, const POINT& point);
 
@@ -30,8 +30,8 @@ private:
 private:
 	vector<RectInfo*> mTileList;
 	class AStar* mAStar = nullptr;
-	bool isAStarStart = false;
-
+	bool mIsAStarStart = false;
+	bool mIsMoveTo = false;
 //API Render 
 private:
 	HDC mhDC;

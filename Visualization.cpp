@@ -62,6 +62,7 @@ void Visualization::DrawTile(HDC hdc)
 	HBRUSH brush;
 	HBRUSH oldBrush;
 	TCHAR inputText[20] = { 0, };
+	static bool isMoveTo = true;
 
 	for (const RectInfo* rectInfo : mTileList)
 	{
@@ -86,25 +87,18 @@ void Visualization::DrawTile(HDC hdc)
 				break;
 			case FINISH_INDEX:
 				{
-					MoveToEx(hdc, rectInfo->point.x, rectInfo->point.y, nullptr);
 					brush = (HBRUSH)CreateSolidBrush(RGB(255, 0, 0));
 					wsprintf(inputText, L"Finish");					
 				}
 				break;
 			case OPEN_INDEX:
 				{
-					brush = (HBRUSH)CreateSolidBrush(RGB(125, 255, 125));
+					brush = (HBRUSH)CreateSolidBrush(RGB(125, 125, 255));
 				}
 				break;
 			case CLOSE_INDEX:
 				{
-					brush = (HBRUSH)CreateSolidBrush(RGB(125, 125, 255));
-				}
-				break;
-			case DESTINATION_INDEX:
-				{
-					LineTo(hdc, rectInfo->point.x, rectInfo->point.y);
-					brush = (HBRUSH)CreateSolidBrush(RGB(255, 127, 0));
+					brush = (HBRUSH)CreateSolidBrush(RGB(235, 200, 0));
 				}
 				break;
 			default:
@@ -126,34 +120,21 @@ void Visualization::DrawTile(HDC hdc)
 
 		switch (rectInfo->nodeIndex)
 		{
-			case NORMAL_INDEX:
-				{
-					//brush = (HBRUSH)CreateSolidBrush(RGB(255, 255, 255));
-				}
-				break;
-			case BLOCK_INDEX:
-				{
-					//brush = (HBRUSH)CreateSolidBrush(RGB(125, 125, 125));
-				}
-				break;
 			case START_INDEX:
 				{
-					//brush = (HBRUSH)CreateSolidBrush(RGB(255, 0, 0));
 					wsprintf(inputText, L"Start");
 					DrawText(hdc, inputText, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 				}
 				break;
 			case FINISH_INDEX:
 				{
-					//brush = (HBRUSH)CreateSolidBrush(RGB(255, 0, 0));
 					wsprintf(inputText, L"Finish");
-					DrawText(hdc, inputText, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+					DrawText(hdc, inputText, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);		
 				}
 				break;
 #ifdef NODE_INFO_VIEW
 			case OPEN_INDEX:
 			case CLOSE_INDEX:
-			case DESTINATION_INDEX:
 				{
 					RECT tempRect;
 					tempRect = textRect;
@@ -164,7 +145,6 @@ void Visualization::DrawTile(HDC hdc)
 					swprintf_s(inputText, _countof(inputText), L"%0.1f", rectInfo->F);
 					DrawText(hdc, inputText, -1, &tempRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 				}
-				break;
 #endif
 			default:
 				{
@@ -181,26 +161,23 @@ void Visualization::DrawTile(HDC hdc)
 
 void Visualization::DrawFinishLine(const POINT& point)
 {
-	static bool isMoveTo = true;
+	HPEN pen;
+	HPEN oldPen;
 
-	//SetBkMode(mhMemDC, TRANSPARENT);
-	//SetTextColor(mhMemDC, RGB(255, 255, 255));
-	//FillRect(mhMemDC, &gWindowRect, (HBRUSH)GetStockObject(BLACK_BRUSH));
-
-	if (true == isMoveTo)
+	pen = CreatePen(PS_SOLID, 3, RGB(255, 0, 0));
+	oldPen = (HPEN)SelectObject(mhMemDC, pen);
+	if (true == mIsMoveTo)
 	{
-		MoveToEx(mhMemDC, point.x, point.y, nullptr);
-		isMoveTo = false;
+		MoveToEx(mhMemDC, point.x - (RECT_SIZE / 2), point.y - (RECT_SIZE / 2), nullptr);
+		mIsMoveTo = false;
 	}
 	else
 	{
-		LineTo(mhMemDC, point.x, point.y);
-		//BitBlt(mhDC, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, mhMemDC, 0, 0, SRCCOPY);
+		LineTo(mhMemDC, point.x - (RECT_SIZE / 2), point.y - (RECT_SIZE / 2));
 	}
 
-
-	//Render();
-	
+	SelectObject(mhMemDC, oldPen);
+	DeleteObject(pen);
 }
 
 void Visualization::SetTilePicking(const RectInfo& rectInfo)
@@ -250,14 +227,14 @@ void Visualization::SetTilePicking(const RectInfo& rectInfo)
 				mTileList[mPrevStart_TileIndex]->nodeIndex = NORMAL_INDEX;
 				mTileList[mPrevFinish_TileIndex]->nodeIndex = NORMAL_INDEX;
 				mPrevStart_TileIndex = tileIndex;
-				isAStarStart = false;
+				mIsAStarStart = false;
 			}
 			break;
 		case FINISH_INDEX:
 			{
 				mPrevFinish_TileIndex = tileIndex;
 				// 길찾기 시작
-				isAStarStart = true;
+				mIsAStarStart = true;
 			}
 			break;
 		default:
@@ -284,16 +261,17 @@ void Visualization::SetBlockIndexClear()
 
 void Visualization::AStarWorking()
 {
-	if (true == isAStarStart)
+	if (true == mIsAStarStart)
 	{
+		mIsMoveTo = true; // 출발지와 목적지 간의 경로를 선으로 표시 하기 위한 작업 진행
 		if (false == mAStar->AStarStart(mPrevStart_TileIndex, mPrevFinish_TileIndex, mTileList))
 		{
 			MESSAGE_BOX(L"해당 위치로는 목적지를 설정 할 수 없습니다.!");
-			isAStarStart = false;
+			mIsAStarStart = false;
 			return;
 		}
 
-		isAStarStart = false;
+		mIsAStarStart = false;
 	}
 }
 
@@ -310,6 +288,11 @@ void Visualization::Render()
 	SetTextColor(mhMemDC, RGB(255, 255, 255));
 	FillRect(mhMemDC, &gWindowRect, (HBRUSH)GetStockObject(BLACK_BRUSH));
 	DrawTile(mhMemDC);
+	BitBlt(mhDC, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, mhMemDC, 0, 0, SRCCOPY);
+}
+
+void Visualization::RenderBitBlt()
+{
 	BitBlt(mhDC, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, mhMemDC, 0, 0, SRCCOPY);
 }
 

@@ -179,17 +179,14 @@ bool AStar::FindRoute(vector<RectInfo*>& tileList)
 
 			while (true)
 			{
-				// Visualization AStar 길찾기 경로 표시
-				if (parent->index != mFinishIndex && parent->index != mStartIndex)
-				{
-					tileList[parent->index]->nodeIndex = DESTINATION_INDEX;
-					mVisualization->Render();
-				}
-
+				//Visualization AStar 길찾기 경로 표시
+				mVisualization->DrawFinishLine(tileList[parent->index]->point);
 				// 경로를 생성해준다.
 				if (parent->parent == nullptr)
 				{
 					wprintf(L"finishCount:%d\n", finishCount);
+					//Visualization AStar 길찾기 경로 표시
+					mVisualization->RenderBitBlt();
 					break;
 				}
 
